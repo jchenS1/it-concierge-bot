@@ -1,0 +1,15 @@
+{
+  "catalog": [
+    {
+      "app_id": "2CAfu61AAA3heEItnkkKHsLdSak",
+      "entitlement_id": "2Lsc6QcmGzx1Vcy5y3ftwWF6B9C",
+      "app_name": "Okta Teams & Groups",
+      "label": "Team-IT",
+      "description": "Member of the Team-IT Okta group.",
+      "risk": "low",
+      "aliases": ["team-it", "team it", "it team", "it group", "it okta group"],
+      "max_duration_days": null,
+      "approver_note": "Routes to the IT team owner for approval."
+    }
+  ]
+}

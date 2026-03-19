@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# Credentials / secrets (never commit these)
+*.pem
+*.key
+*.secret
+
+# n8n local data
+.n8n/
+
+# Terraform state (contains sensitive outputs)
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+
+# Temp / output files
+scripts/*.output
+/tmp/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
