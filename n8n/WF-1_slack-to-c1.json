@@ -8,187 +8,241 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "id": "30362b84-5844-4707-8bd6-57729ab1d530",
       "name": "Webhook: Slack Events",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300]
+      "position": [
+        -656,
+        96
+      ],
+      "webhookId": "02acf590-52bf-4b31-9804-fdfd25315d6e"
     },
     {
       "parameters": {
         "jsCode": "// Parse Slack event body and handle URL verification challenge\nconst body = $input.first().json.body;\nconst headers = $input.first().json.headers;\n\n// URL verification handshake (Slack sends this on initial setup)\nif (body.type === 'url_verification') {\n  return [{ json: { _type: 'challenge', challenge: body.challenge } }];\n}\n\n// Only process message events in channels\nconst event = body.event;\nif (!event) return [{ json: { _type: 'ignored' } }];\nif (event.type !== 'app_mention') return [{ json: { _type: 'ignored' } }]; // only handle @mentions, not duplicate message events\nif (event.bot_id || event.subtype) return [{ json: { _type: 'ignored' } }]; // ignore bot messages\n\nreturn [{\n  json: {\n    _type: 'message',\n    text: event.text || '',\n    user_id: event.user,\n    channel: event.channel,\n    ts: event.ts,\n    team_id: body.team_id\n  }\n}];\n"
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "id": "a583c60f-0e57-4fbc-bed3-b77400cc5d33",
       "name": "Parse Slack Event",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        -432,
+        96
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false },
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "cond-challenge",
               "leftValue": "={{ $json._type }}",
               "rightValue": "challenge",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "id": "28d42183-e143-4b15-a896-35100f059d8f",
       "name": "Is Challenge?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [
+        -208,
+        96
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ JSON.stringify({ challenge: $json.challenge }) }}",
-        "options": { "responseCode": 200 }
+        "options": {
+          "responseCode": 200
+        }
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "id": "790b7301-c9c1-417d-b1a4-4322c31a5a6e",
       "name": "Respond: Challenge",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [900, 180]
+      "position": [
+        16,
+        0
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false },
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "cond-message",
               "leftValue": "={{ $json._type }}",
               "rightValue": "message",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000011",
+      "id": "de51668a-e194-416b-ac60-18309303ae11",
       "name": "Is Message?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1120, 400]
+      "position": [
+        240,
+        192
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://api.anthropic.com/v1/messages",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "x-api-key", "value": "{{ANTHROPIC_API_KEY}}" },
-            { "name": "anthropic-version", "value": "2023-06-01" },
-            { "name": "content-type", "value": "application/json" }
-          ]
-        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
         "sendBody": true,
-        "bodyParameters": {
-          "parameters": []
-        },
         "specifyBody": "json",
         "jsonBody": "={\n  \"model\": \"claude-sonnet-4-5\",\n  \"max_tokens\": 256,\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"You are an IT access request assistant for a company's internal Slack bot.\\n\\nA user has sent a message asking for access to something. Your job is to extract structured information from their message and return ONLY valid JSON — no explanation, no markdown, no preamble.\\n\\nExtract:\\n- \\\"intent\\\": \\\"access_request\\\" or \\\"not_access_request\\\"\\n- \\\"app\\\": application name as the user said it (string or null)\\n- \\\"role\\\": specific role or permission mentioned (string or null)\\n- \\\"duration\\\": how long they need access (string or null)\\n- \\\"justification\\\": their stated reason (string or null)\\n- \\\"urgency\\\": \\\"normal\\\" or \\\"urgent\\\" (urgent if they say ASAP, blocked, urgent, today, emergency)\\n\\nReturn ONLY the JSON object. Nothing else.\\n\\nUser message: {{ $json.text }}\"\n    }\n  ]\n}",
         "options": {}
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "id": "3d1c1b00-8e5d-439c-a10d-d21228484ba7",
       "name": "Claude: Extract Intent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1340, 400]
+      "position": [
+        464,
+        192
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "cGNcVBFIgi5FqWia",
+          "name": "Anthropic account"
+        }
+      }
     },
     {
       "parameters": {
         "jsCode": "// Parse Claude response and fuzzy-match against catalog\nconst claudeRaw = $input.first().json.content[0].text;\nlet extracted;\ntry {\n  let raw = claudeRaw.trim();\n  if (raw.startsWith('```')) {\n    raw = raw.replace(/^```(?:json)?\\n?/, '').replace(/\\n?```$/, '');\n  }\n  extracted = JSON.parse(raw);\n} catch(e) { return [{ json: { _type: 'no_match', reason: 'claude_parse_error', raw: claudeRaw } }]; }\n\nif (extracted.intent !== 'access_request' || !extracted.app) {\n  return [{ json: { _type: 'no_match', reason: 'not_access_request', extracted } }];\n}\n\n// Hardcoded catalog (synced from catalog/entitlements.json)\nconst catalog = [\n  {\n    app_id: '2CAfu61AAA3heEItnkkKHsLdSak',\n    entitlement_id: '3B8ghDszuxqUa0DnZcCvakCv5Em',\n    app_name: 'Okta Teams & Groups',\n    label: 'Team-IT-Pilot',\n    description: 'Member of the Team-IT-Pilot Okta group.',\n    risk: 'low',\n    aliases: ['team-it-pilot', 'team it pilot', 'it pilot', 'pilot'],\n    approver_note: 'Routes to the IT team owner for approval.'\n  }\n];\n\n// Fuzzy scoring\nconst appInput = (extracted.app || '').toLowerCase().trim();\nlet bestMatch = null, bestScore = 0;\n\nfor (const entry of catalog) {\n  let score = 0;\n  const label = entry.label.toLowerCase();\n  const name = entry.app_name.toLowerCase();\n\n  if (appInput === label || appInput === name) score += 10;\n  else if (label.includes(appInput) || appInput.includes(label)) score += 5;\n  else if (name.includes(appInput) || appInput.includes(name)) score += 4;\n\n  for (const alias of entry.aliases) {\n    if (appInput === alias) { score += 10; break; }\n    if (alias.includes(appInput) || appInput.includes(alias)) { score += 5; break; }\n  }\n\n  if (extracted.role) {\n    const role = extracted.role.toLowerCase();\n    if (entry.label.toLowerCase().includes(role)) score += 3;\n  }\n\n  if (score > bestScore) { bestScore = score; bestMatch = entry; }\n}\n\nif (!bestMatch || bestScore < 4) {\n  return [{ json: { _type: 'no_match', reason: 'no_catalog_match', extracted } }];\n}\n\n// Pull Slack context from earlier node\nconst slackCtx = $('Parse Slack Event').first().json;\n\nreturn [{\n  json: {\n    _type: 'match',\n    extracted,\n    match: bestMatch,\n    score: bestScore,\n    slack_user_id: slackCtx.user_id,\n    slack_channel: slackCtx.channel,\n    slack_ts: slackCtx.ts\n  }\n}];\n"
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "id": "dc1db55b-2faf-4a75-b9fc-c98450bc6de2",
       "name": "Catalog Match",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 400]
+      "position": [
+        688,
+        192
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false },
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "cond-match",
               "leftValue": "={{ $json._type }}",
               "rightValue": "match",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000007",
+      "id": "794939ba-d378-4bab-b293-3b684107ec1b",
       "name": "Match Found?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1780, 400]
+      "position": [
+        912,
+        192
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://slack.com/api/chat.postEphemeral",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer {{SLACK_BOT_TOKEN}}" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"channel\": \"{{ $json.slack_channel }}\",\n  \"user\": \"{{ $json.slack_user_id }}\",\n  \"text\": \"Access request confirmation\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"🔐 Access Request\" }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*App:*\\n{{ $json.match.app_name }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Role / Group:*\\n{{ $json.match.label }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Risk:*\\n{{ $json.match.risk }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Approver:*\\n{{ $json.match.approver_note }}\" }\n      ]\n    },\n    {\n      \"type\": \"section\",\n      \"text\": { \"type\": \"mrkdwn\", \"text\": \"{{ $json.extracted.justification ? '*Your reason:* ' + $json.extracted.justification : '_No justification provided_' }}\" }\n    },\n    {\n      \"type\": \"actions\",\n      \"block_id\": \"confirm_block\",\n      \"elements\": [\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"✅ Confirm Request\" },\n          \"style\": \"primary\",\n          \"action_id\": \"confirm_request\",\n          \"value\": \"{{ $json.match.app_id + '|' + $json.match.entitlement_id + '|' + $json.match.label + '|' + $json.match.app_name + '|' + ($json.extracted.justification || '') }}\"\n        },\n        {\n          \"type\": \"button\",\n          \"text\": { \"type\": \"plain_text\", \"text\": \"❌ Cancel\" },\n          \"action_id\": \"cancel_request\",\n          \"value\": \"cancel\"\n        }\n      ]\n    }\n  ]\n}",
         "options": {}
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000008",
+      "id": "d8297bc7-10ce-4f60-a0d4-3a981469a4f6",
       "name": "Post Confirmation Card",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 280]
+      "position": [
+        1136,
+        96
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "5BYJYoHq5nrqxlQO",
+          "name": "Slack account"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://slack.com/api/chat.postEphemeral",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer {{SLACK_BOT_TOKEN}}" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"channel\": \"{{ $('Catalog Match').first().json.slack_channel }}\",\n  \"user\": \"{{ $('Catalog Match').first().json.slack_user_id }}\",\n  \"text\": \"⚠️ I couldn't find *{{ $('Catalog Match').first().json.extracted.app }}* in the access catalog. A Jira ticket has been created for the IT team to review.\"\n}",
         "options": {}
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000009",
+      "id": "898ec555-a186-4102-9177-299924bb4183",
       "name": "DM: No Match",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 520]
+      "position": [
+        1136,
+        288
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "5BYJYoHq5nrqxlQO",
+          "name": "Slack account"
+        }
+      }
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={\"ok\": true}",
-        "options": { "responseCode": 200 }
+        "options": {
+          "responseCode": 200
+        }
       },
-      "id": "a1b2c3d4-0001-0001-0001-000000000010",
+      "id": "51ff3d1c-b065-4d67-a2e0-d910d0989f3b",
       "name": "Respond: 200 OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [900, 400]
+      "position": [
+        16,
+        192
+      ]
     },
-
     {
       "parameters": {
         "httpMethod": "POST",
@@ -196,66 +250,90 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000001",
+      "id": "cfa1ed39-d054-4758-8bf3-37da3dcec684",
       "name": "Webhook: Slack Interactions",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 700]
+      "position": [
+        -656,
+        608
+      ],
+      "webhookId": "46feee20-7e06-41d9-b569-efabeb60636a"
     },
     {
       "parameters": {
         "jsCode": "// Slack interactions come as URL-encoded form with a 'payload' field\nconst body = $input.first().json.body;\nlet payload;\ntry {\n  const raw = typeof body === 'string' ? body : body.payload;\n  payload = JSON.parse(decodeURIComponent(raw));\n} catch(e) {\n  // body already parsed by n8n\n  payload = body.payload ? JSON.parse(body.payload) : body;\n}\n\nconst action = payload.actions && payload.actions[0];\nif (!action) return [{ json: { _type: 'no_action' } }];\n\nif (action.action_id === 'cancel_request') {\n  return [{ json: { _type: 'cancelled', user_id: payload.user.id, channel: payload.channel.id, response_url: payload.response_url } }];\n}\n\nif (action.action_id === 'confirm_request') {\n  const parts = (action.value || '').split('|');\n  const value = { app_id: parts[0], entitlement_id: parts[1], label: parts[2], app_name: parts[3], justification: parts[4] || '' };\n  return [{\n    json: {\n      _type: 'confirmed',\n      app_id: value.app_id,\n      entitlement_id: value.entitlement_id,\n      label: value.label,\n      app_name: value.app_name,\n      justification: value.justification,\n      slack_user_id: payload.user.id,\n      slack_user_email: payload.user.email || null,\n      slack_team_id: payload.team.id,\n      channel: payload.channel ? payload.channel.id : null,\n      response_url: payload.response_url\n    }\n  }];\n}\n\nreturn [{ json: { _type: 'unknown_action', action_id: action.action_id } }];\n"
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000002",
+      "id": "99b5df89-ae98-45fd-9626-1ec7cdc01100",
       "name": "Parse Interaction",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 700]
+      "position": [
+        -432,
+        608
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": false },
+          "options": {
+            "caseSensitive": false
+          },
           "conditions": [
             {
               "id": "cond-confirmed",
               "leftValue": "={{ $json._type }}",
               "rightValue": "confirmed",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
-        }
+        },
+        "options": {}
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000003",
+      "id": "262183db-6387-4f8a-aebc-d2e82af0f335",
       "name": "Is Confirmed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [680, 700]
+      "position": [
+        -208,
+        608
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://slack.com/api/users.info",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer {{SLACK_BOT_TOKEN}}" }
-          ]
-        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
         "sendBody": true,
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            { "name": "user", "value": "={{ $json.slack_user_id }}" }
+            {
+              "name": "user",
+              "value": "={{ $json.slack_user_id }}"
+            }
           ]
         },
         "options": {}
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000004",
+      "id": "084de42c-daec-412b-a3b2-eb71d8cbbb23",
       "name": "Get Slack User Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 620]
+      "position": [
+        240,
+        512
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "5BYJYoHq5nrqxlQO",
+          "name": "Slack account"
+        }
+      }
     },
     {
       "parameters": {
@@ -265,28 +343,43 @@
         "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
-            { "name": "grant_type", "value": "client_credentials" },
-            { "name": "client_id", "value": "{{C1_CLIENT_ID}}" },
-            { "name": "client_secret", "value": "{{C1_CLIENT_SECRET}}" }
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "={{ $env.C1_CLIENT_ID }}"
+            },
+            {
+              "name": "client_secret",
+              "value": "={{ $env.C1_CLIENT_SECRET }}"
+            }
           ]
         },
         "options": {}
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000005",
+      "id": "7d623c45-8285-4c0a-b6d3-613854662cb3",
       "name": "Get C1 Token",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [900, 780]
+      "position": [
+        464,
+        512
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Merge Slack user email + C1 token for next steps\nconst slackUser = $('Get Slack User Email').first().json;\nconst c1Token = $('Get C1 Token').first().json;\nconst interaction = $('Parse Interaction').first().json;\n\nconst email = slackUser.user && slackUser.user.profile && slackUser.user.profile.email;\nif (!email) throw new Error('Could not retrieve Slack user email. Ensure users:read.email scope is granted.');\n\nreturn [{\n  json: {\n    email,\n    c1_token: c1Token.access_token,\n    app_id: interaction.app_id,\n    entitlement_id: interaction.entitlement_id,\n    label: interaction.label,\n    app_name: interaction.app_name,\n    justification: interaction.justification,\n    slack_user_id: interaction.slack_user_id,\n    channel: interaction.channel,\n    response_url: interaction.response_url\n  }\n}];\n"
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000006",
+      "id": "6669acbd-4d1c-4b75-98fb-a7ae5cc4a14e",
       "name": "Merge Email + Token",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 700]
+      "position": [
+        688,
+        512
+      ]
     },
     {
       "parameters": {
@@ -295,8 +388,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.c1_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.c1_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -304,21 +403,27 @@
         "jsonBody": "={ \"query\": \"{{ $json.email }}\" }",
         "options": {}
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000007",
+      "id": "318c9104-4fd2-4433-bfe6-6ad13dfe8f9e",
       "name": "C1: Look Up User",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1340, 700]
+      "position": [
+        912,
+        512
+      ]
     },
     {
       "parameters": {
-        "jsCode": "// Extract C1 user ID from POST /api/v1/search/users response\nconst ctx = $('Merge Email + Token').first().json;\nconst targetEmail = (ctx.email || '').toLowerCase();\n\nconst users = $input.first().json.list || [];\nconst match = users.find(u => (u.user?.email || u.email || '').toLowerCase() === targetEmail);\nif (!match) throw new Error('C1 user not found for email: ' + targetEmail);\n\nconst c1UserId = match.user?.id || match.id;\nif (!c1UserId) throw new Error('C1 user record missing id field');\n\nreturn [{\n  json: {\n    c1_token: ctx.c1_token,\n    c1_user_id: c1UserId,\n    app_id: ctx.app_id,\n    entitlement_id: ctx.entitlement_id,\n    label: ctx.label,\n    app_name: ctx.app_name,\n    justification: ctx.justification,\n    slack_user_id: ctx.slack_user_id,\n    channel: ctx.channel,\n    response_url: ctx.response_url,\n    email: ctx.email\n  }\n}];\n"
+        "jsCode": "const ctx = $('Merge Email + Token').first().json;\nconst targetEmail = (ctx.email || '').toLowerCase();\n\nconst users = $input.first().json.list || [];\nconst match = users.find(u => (u.user?.email || u.email || '').toLowerCase() === targetEmail);\nif (!match) throw new Error('C1 user not found for email: ' + targetEmail);\n\nconst c1UserId = match.user?.id || match.id;\nif (!c1UserId) throw new Error('C1 user record missing id field');\n\nreturn [{\n  json: {\n    c1_token: ctx.c1_token,\n    c1_user_id: c1UserId,\n    app_id: ctx.app_id,\n    entitlement_id: ctx.entitlement_id,\n    label: ctx.label,\n    app_name: ctx.app_name,\n    justification: ctx.justification,\n    slack_user_id: ctx.slack_user_id,\n    channel: ctx.channel,\n    response_url: ctx.response_url,\n    email: ctx.email\n  }\n}];\n"
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000008",
+      "id": "89cd3dc3-efd4-4229-a711-e5b55cc6f65a",
       "name": "Extract C1 User ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 700]
+      "position": [
+        1136,
+        512
+      ]
     },
     {
       "parameters": {
@@ -327,8 +432,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $json.c1_token }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.c1_token }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -336,21 +447,27 @@
         "jsonBody": "={\n  \"appId\": \"{{ $json.app_id }}\",\n  \"appEntitlementId\": \"{{ $json.entitlement_id }}\",\n  \"identityUserId\": \"{{ $json.c1_user_id }}\",\n  \"description\": \"{{ $json.justification || 'Access requested via IT Concierge Slack bot' }}\"\n}",
         "options": {}
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000009",
+      "id": "ca8f8413-fb3b-4b1c-88ac-89750eca5e74",
       "name": "C1: Create Access Request",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1780, 700]
+      "position": [
+        1360,
+        512
+      ]
     },
     {
       "parameters": {
         "jsCode": "// Extract C1 task ID and pass context through\nconst c1Resp = $input.first().json;\nconst ctx = $('Extract C1 User ID').first().json;\n\n// C1 task/grant returns { taskView: { task: { id, ... } } } or { task: { id } } or { id }\nconst taskId = c1Resp.taskView?.task?.id || c1Resp.task?.id || c1Resp.id || c1Resp.requestId || '(see C1 dashboard)';\n\nreturn [{\n  json: {\n    task_id: taskId,\n    slack_user_id: ctx.slack_user_id,\n    channel: ctx.channel,\n    label: ctx.label,\n    app_name: ctx.app_name,\n    response_url: ctx.response_url\n  }\n}];\n"
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000010",
+      "id": "4744bdb5-cb7d-4d9b-b46c-2422e809bdba",
       "name": "Extract Task ID",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2000, 700]
+      "position": [
+        1584,
+        512
+      ]
     },
     {
       "parameters": {
@@ -359,7 +476,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -367,142 +487,329 @@
         "jsonBody": "={\n  \"replace_original\": true,\n  \"text\": \"✅ Your access request for *{{ $json.label }}* ({{ $json.app_name }}) has been submitted to ConductorOne for approval.\\n\\n*Ticket:* <https://system1-corp.conductor.one/requests/{{ $json.task_id }}|Link to your request>\\n\\nYou'll receive a DM from the ConductorOne Slack app when your approver acts on it.\"\n}",
         "options": {}
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000014",
+      "id": "c1003e4f-6b25-467f-a217-7047e96b1a54",
       "name": "Update Card",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2000, 560]
+      "position": [
+        1808,
+        512
+      ]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://slack.com/api/chat.postMessage",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer {{SLACK_BOT_TOKEN}}" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "slackApi",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"channel\": \"{{ $json.slack_user_id }}\",\n  \"text\": \"✅ Your access request for *{{ $json.label }}* ({{ $json.app_name }}) has been submitted to ConductorOne for approval.\\n\\n*Ticket:* <https://system1-corp.conductor.one/requests/{{ $json.task_id }}|Link to your request>\\n\\nYou'll receive a DM from the ConductorOne Slack app when your approver acts on it.\"\n}",
         "options": {}
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000011",
+      "id": "82ad1a12-d653-427a-afb6-cbaaf7243e9b",
       "name": "DM: Request Submitted",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2220, 700]
+      "position": [
+        2032,
+        512
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "5BYJYoHq5nrqxlQO",
+          "name": "Slack account"
+        }
+      }
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={\"ok\": true}",
-        "options": { "responseCode": 200 }
+        "options": {
+          "responseCode": 200
+        }
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000012",
+      "id": "adc55640-7af4-473c-9b18-be506755228e",
       "name": "Respond: Interaction 200",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [2440, 700]
+      "position": [
+        16,
+        512
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={\"ok\": true}",
-        "options": { "responseCode": 200 }
+        "options": {
+          "responseCode": 200
+        }
       },
-      "id": "a1b2c3d4-0002-0002-0002-000000000013",
+      "id": "c4aea5e6-b9ec-4c16-b212-1dcfba329ac5",
       "name": "Respond: Cancelled 200",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [900, 860]
+      "position": [
+        16,
+        704
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Webhook: Slack Events": {
-      "main": [[{ "node": "Parse Slack Event", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Slack Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Slack Event": {
-      "main": [[{ "node": "Is Challenge?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Is Challenge?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Is Challenge?": {
       "main": [
-        [{ "node": "Respond: 200 OK", "type": "main", "index": 0 }],
-        [{ "node": "Respond: Challenge", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Respond: 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Challenge",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Respond: 200 OK": {
-      "main": [[{ "node": "Is Message?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Is Message?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Is Message?": {
       "main": [
-        [{ "node": "Claude: Extract Intent", "type": "main", "index": 0 }],
-        []
+        [
+          {
+            "node": "Claude: Extract Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Claude: Extract Intent": {
-      "main": [[{ "node": "Catalog Match", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Catalog Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Catalog Match": {
-      "main": [[{ "node": "Match Found?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Match Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Match Found?": {
       "main": [
-        [{ "node": "Post Confirmation Card", "type": "main", "index": 0 }],
-        [{ "node": "DM: No Match", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Post Confirmation Card",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DM: No Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Webhook: Slack Interactions": {
-      "main": [[{ "node": "Parse Interaction", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Interaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Interaction": {
-      "main": [[{ "node": "Is Confirmed?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Is Confirmed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Is Confirmed?": {
       "main": [
-        [{ "node": "Respond: Interaction 200", "type": "main", "index": 0 }],
-        [{ "node": "Respond: Cancelled 200", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Respond: Interaction 200",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Cancelled 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Respond: Interaction 200": {
-      "main": [[{ "node": "Get Slack User Email", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get Slack User Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Slack User Email": {
-      "main": [[{ "node": "Get C1 Token", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get C1 Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get C1 Token": {
-      "main": [[{ "node": "Merge Email + Token", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Merge Email + Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Merge Email + Token": {
-      "main": [[{ "node": "C1: Look Up User", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "C1: Look Up User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "C1: Look Up User": {
-      "main": [[{ "node": "Extract C1 User ID", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Extract C1 User ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extract C1 User ID": {
-      "main": [[{ "node": "C1: Create Access Request", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "C1: Create Access Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "C1: Create Access Request": {
-      "main": [[{ "node": "Extract Task ID", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Extract Task ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extract Task ID": {
-      "main": [[{ "node": "Update Card", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Update Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Update Card": {
-      "main": [[{ "node": "DM: Request Submitted", "type": "main", "index": 0 }]]
-    },
-    "DM: Request Submitted": {
-      "main": [[]]
+      "main": [
+        [
+          {
+            "node": "DM: Request Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
+  "versionId": "5c68634c-c678-4526-ae11-85c6f3078d4c",
   "meta": {
-    "templateCredsSetupCompleted": true
+    "instanceId": "d3e4a14db8701e0359ba7e88bdf5b83b29d7659566f22cec2df5fede3a88f0bd"
   },
+  "id": "37rWgjHV19gmeNB2",
   "tags": []
 }
